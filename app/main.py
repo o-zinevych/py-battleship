@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 class Deck:
     def __init__(self, row: int, column: int, is_alive: bool = True) -> None:
         self.row = row
@@ -19,36 +22,29 @@ class Ship:
             row_distance = end[0] - start[0]
             column_distance = end[1] - start[1]
             row_deck = []
-            if row_distance >= 2:
-                for i in range(1, row_distance):
-                    row_deck.append(start[0] + i)
-            elif column_distance >= 2:
-                row_deck = [start[0]] * (column_distance - 1)
             column_deck = []
-            if column_distance >= 2:
-                for i in range(1, column_distance):
-                    column_deck.append(start[1] + i)
-            elif row_distance >= 2:
+            for i in range(1, row_distance):
+                row_deck.append(start[0] + i)
+            for i in range(1, column_distance):
+                column_deck.append(start[1] + i)
+            if not row_deck:
+                row_deck = [start[0]] * (column_distance - 1)
+            if not column_deck:
                 column_deck = [start[1]] * (row_distance - 1)
-            deck_coords = [(row_deck[i], column_deck[i])
-                           for i in range(len(row_deck)) if row_deck]
-            self.decks.extend([Deck(*deck) for deck in deck_coords])
+
+            for i in range(len(row_deck)):
+                self.decks.append(Deck(row_deck[i], column_deck[i]))
         self.is_drowned = is_drowned
 
-    def get_deck(self, row: int, column: int) -> Deck:
+    def get_deck(self, row: int, column: int) -> Deck | None:
         for deck in self.decks:
             if deck.row == row and deck.column == column:
                 return deck
 
     def fire(self, row: int, column: int) -> None:
-        hit_decks_count = 0
         deck = self.get_deck(row, column)
         deck.is_alive = False
-        for deck in self.decks:
-            if deck.is_alive:
-                break
-            hit_decks_count += 1
-        if hit_decks_count == len(self.decks):
+        if not any([deck.is_alive for deck in self.decks]):
             self.is_drowned = True
 
 
@@ -57,8 +53,8 @@ class Battleship:
         self.field = {}
         for ship in ships:
             ship = Ship(*ship)
-            ship_dict = {(ship.decks[i].row, ship.decks[i].column): ship
-                         for i in range(len(ship.decks))}
+            ship_dict = {(deck.row, deck.column): ship
+                         for deck in ship.decks}
             self.field.update(ship_dict)
 
     def fire(self, location: tuple) -> str:
